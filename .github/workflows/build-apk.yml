@@ -1,0 +1,75 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Unpack game source
+        run: |
+          test -f LastCampfire.zip
+          mkdir -p app
+          unzip -q LastCampfire.zip -d app
+          test -f app/package.json
+          test -f app/capacitor.config.json
+          test -d app/www
+
+      - name: Install JavaScript dependencies
+        working-directory: app
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Prepare Android project
+        working-directory: app
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+          if [ -f tools/patch_android.py ]; then
+            python3 tools/patch_android.py
+          fi
+          npx cap sync android
+
+      - name: Build debug APK
+        working-directory: app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Verify APK
+        run: |
+          test -s app/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
