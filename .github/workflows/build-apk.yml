@@ -28,9 +28,9 @@ jobs:
 
       - name: Unpack game source
         run: |
-          test -f LastCampfire.zip
+          test -f LastCampfire-1.4.0-beta.1.zip
           mkdir -p app
-          unzip -q LastCampfire.zip -d app
+          unzip -q LastCampfire-1.4.0-beta.1.zip -d app
           test -f app/package.json
           test -f app/capacitor.config.json
           test -d app/www
