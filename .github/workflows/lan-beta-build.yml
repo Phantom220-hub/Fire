@@ -1,10 +1,11 @@
-name: Last Campfire LAN Beta APK
+name: Last Campfire LAN Beta APK (fixed source)
 
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/lan-beta-build.yml'
+      - 'LastCampfire_LAN_beta_fixed_source.zip'
   workflow_dispatch:
 
 permissions:
@@ -25,11 +26,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Extract LAN beta source only
+      - name: Extract fixed LAN beta source only
         run: |
-          test -f LastCampfire_LAN_beta_source.zip
+          test -f LastCampfire_LAN_beta_fixed_source.zip
           mkdir -p src
-          unzip -q LastCampfire_LAN_beta_source.zip -d src
+          unzip -q LastCampfire_LAN_beta_fixed_source.zip -d src
           PKG=$(find src -name package.json -type f -print -quit)
           test -n "$PKG"
           APP_DIR=$(dirname "$PKG")
@@ -51,10 +52,10 @@ jobs:
           cd "$APP_DIR/android"
           chmod +x gradlew
           ./gradlew --no-daemon assembleDebug
-      - name: Verify and upload LAN beta APK
+      - name: Verify and upload fixed LAN beta APK
         uses: actions/upload-artifact@v4
         with:
-          name: LastCampfire-LAN-Beta-APK
+          name: LastCampfire-LAN-Beta-Fixed-APK
           path: ${{ env.APP_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
