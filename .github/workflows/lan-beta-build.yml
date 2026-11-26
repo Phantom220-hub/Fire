@@ -56,7 +56,8 @@ jobs:
             exit 1
           fi
           sed -i 's/NetworkCallback/ConnectivityManager.NetworkCallback/g' "$JAVA_FILE"
-          grep -n 'ConnectivityManager.NetworkCallback' "$JAVA_FILE"
+          sed -i 's/unregisterConnectivityManager\.NetworkCallback/unregisterNetworkCallback/g' "$JAVA_FILE"
+          grep -n 'ConnectivityManager.NetworkCallback\|unregisterNetworkCallback' "$JAVA_FILE"
       - name: Build APK
         run: |
           cd "$APP_DIR/android"
