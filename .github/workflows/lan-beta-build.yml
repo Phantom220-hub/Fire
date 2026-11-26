@@ -62,15 +62,16 @@ jobs:
               "android.permission.ACCESS_NETWORK_STATE",
               "android.permission.CHANGE_NETWORK_STATE",
           )
-          match = re.search(r"<manifest\\b[^>]*>", text, re.S)
-          if not match:
+          start = text.find("<manifest")
+          end = text.find(">", start) if start >= 0 else -1
+          if start < 0 or end < 0:
               raise SystemExit("AndroidManifest.xml has no manifest root element")
           insertion = ""
           for permission in permissions:
-              if f'android:name="{permission}"' not in text:
-                  insertion += f'\\n    <uses-permission android:name="{permission}" />'
+              if 'android:name="' + permission + '"' not in text:
+                  insertion += chr(10) + '    <uses-permission android:name="' + permission + '" />'
           if insertion:
-              text = text[:match.end()] + insertion + text[match.end():]
+              text = text[:end + 1] + insertion + text[end + 1:]
               path.write_text(text, encoding="utf-8")
           print("LAN plugin installed; required network permissions verified.")
           PY
