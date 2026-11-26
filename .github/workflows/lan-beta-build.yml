@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/lan-beta-build.yml'
       - 'LastCampfire_LAN_beta_fixed_source.zip'
+      - '.github/lan/patch_multiplayer.py'
       - '.github/lan/LanPlugin.java'
   workflow_dispatch:
 
@@ -38,6 +39,7 @@ jobs:
           echo "APP_DIR=$APP_DIR" >> "$GITHUB_ENV"
           test -f "$APP_DIR/capacitor.config.json"
           test -d "$APP_DIR/www"
+          python3 .github/lan/patch_multiplayer.py "$APP_DIR"
       - name: Install JS dependencies
         run: |
           cd "$APP_DIR"
