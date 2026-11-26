@@ -1,8 +1,10 @@
-name: Build Android APK
+name: Build Android APK (regular game)
 
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:
