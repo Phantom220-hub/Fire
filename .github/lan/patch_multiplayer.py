@@ -292,6 +292,31 @@ js = replace_once(js,
 """        playersInRun(r).forEach(actor => { if (!actor.dead && d2(e.x, e.y, actor.x, actor.y) < R * R) hurtPlayer(14 + r.night * 0.5, actor); });
 """, 'boss slam')
 
+# Keep both heroes' health and life-steal effects consistent in the shared run.
+extra_replacements = [
+    ("""    r.player.hp = Math.min(r.player.maxHp, r.player.hp + r.player.maxHp * 0.35);
+""",
+     """    playersInRun(r).forEach(actor => { if (!actor.dead) actor.hp = Math.min(actor.maxHp, actor.hp + actor.maxHp * 0.35); });
+""", "day heal"),
+    ("""    if (id === 'vit') { p.maxHp = r.st.maxHp; p.hp = Math.min(p.maxHp, p.hp + 30); }
+""",
+     """    if (id === 'vit') { playersInRun(r).forEach(actor => { const h = HEROES[actor.heroId] || r.hd; actor.maxHp = h.hp + 30 * (r.up.vit || 0); actor.hp = Math.min(actor.maxHp, actor.hp + 30); }); }
+""", "vitality upgrade"),
+    ("""    const lf = r.up.life || 0; if (lf && Math.random() < 0.2 * lf) r.player.hp = Math.min(r.player.maxHp, r.player.hp + 2);
+""",
+     """    const lf = r.up.life || 0; if (lf && Math.random() < 0.2 * lf) playersInRun(r).forEach(actor => { if (!actor.dead) actor.hp = Math.min(actor.maxHp, actor.hp + 2); });
+""", "life steal"),
+    ("""    if (r.over) { r.overT -= dt; updateParts(r, dt); if (r.over === true && r.overT <= 0) { r.over = 1; showOver(); } return; }
+""",
+     """    if (r.over) { r.overT -= dt; updateParts(r, dt); if (net.role === 'host' && net.connected && !net.finalSent) { net.finalSent = true; sendLanPacket(makeLanSnapshot('snapshot')); } if (r.over === true && r.overT <= 0) { r.over = 1; showOver(); } return; }
+""", "final co-op snapshot")
+]
+for old, new, label in extra_replacements:
+    count = js.count(old)
+    if count != 1:
+        raise SystemExit(f"{label}: expected one source match, got {count}")
+    js = js.replace(old, new, 1)
+
 js_path.write_text(js, encoding='utf-8')
 
 # Replace the text-signal panel with host/join/start controls and a JSON packet bridge.
