@@ -40,6 +40,7 @@ public class LanPlugin extends Plugin {
     private static final int PORT = 45678;
     private static final int CONNECT_TIMEOUT_MS = 12000;
     private static final int WIFI_WAIT_MS = 12000;
+    private static final int MAX_FRAME_CHARS = 262144;
 
     private final Object lock = new Object();
     private final Object writeLock = new Object();
@@ -330,16 +331,29 @@ public class LanPlugin extends Plugin {
         }
     }
 
+    private static String readBoundedLine(BufferedReader reader) throws IOException {
+        StringBuilder frame = new StringBuilder(4096);
+        int ch;
+        while ((ch = reader.read()) != -1) {
+            if (ch == '\n') break;
+            if (ch != '\r') {
+                if (frame.length() >= MAX_FRAME_CHARS) {
+                    throw new IOException("Сетевой пакет слишком большой");
+                }
+                frame.append((char) ch);
+            }
+        }
+        if (ch == -1 && frame.length() == 0) return null;
+        return frame.toString();
+    }
+
     private void readLoop(Socket socket) {
         try {
             BufferedReader reader = new BufferedReader(
                 new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8)
             );
             String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.length() > 8192) {
-                    throw new IOException("Слишком длинное сообщение");
-                }
+            while ((line = readBoundedLine(reader)) != null) {
                 JSObject event = new JSObject();
                 event.put("data", line);
                 notifyListeners("message", event);
@@ -355,7 +369,7 @@ public class LanPlugin extends Plugin {
     @PluginMethod
     public void send(PluginCall call) {
         String data = call.getString("data", "ping");
-        if (data == null || data.length() > 8192
+        if (data == null || data.length() > MAX_FRAME_CHARS
             || data.indexOf('\n') >= 0 || data.indexOf('\r') >= 0) {
             call.reject("Сообщение пустое, слишком длинное или содержит перенос строки");
             return;
