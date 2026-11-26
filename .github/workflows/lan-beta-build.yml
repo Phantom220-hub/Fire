@@ -37,12 +37,6 @@ jobs:
           echo "APP_DIR=$APP_DIR" >> "$GITHUB_ENV"
           test -f "$APP_DIR/capacitor.config.json"
           test -d "$APP_DIR/www"
-      - name: Fix Android NetworkCallback qualification
-        run: |
-          JAVA_FILE=$(find "$APP_DIR/android" -name LanPlugin.java -type f -print -quit)
-          if [ -z "$JAVA_FILE" ]; then JAVA_FILE=$(find "$APP_DIR" -name LanPlugin.java -type f -print -quit); fi
-          test -n "$JAVA_FILE"
-          sed -i 's/NetworkCallback/ConnectivityManager.NetworkCallback/g' "$JAVA_FILE"
       - name: Install JS dependencies
         run: |
           cd "$APP_DIR"
@@ -53,6 +47,16 @@ jobs:
           if [ ! -d android ]; then npx cap add android; fi
           if [ -f tools/patch_android.py ]; then python3 tools/patch_android.py; fi
           npx cap sync android
+      - name: Fix Android NetworkCallback qualification
+        run: |
+          JAVA_FILE=$(find "$APP_DIR/android" -name LanPlugin.java -type f -print -quit)
+          if [ -z "$JAVA_FILE" ]; then
+            echo "LanPlugin.java not found after Android project preparation"
+            find "$APP_DIR/android" -maxdepth 8 -type f | head -100
+            exit 1
+          fi
+          sed -i 's/NetworkCallback/ConnectivityManager.NetworkCallback/g' "$JAVA_FILE"
+          grep -n 'ConnectivityManager.NetworkCallback' "$JAVA_FILE"
       - name: Build APK
         run: |
           cd "$APP_DIR/android"
