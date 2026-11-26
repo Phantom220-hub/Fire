@@ -54,7 +54,7 @@ js = replace_once(js,
     if (net.role !== 'host' || !net.connected) { hint('Сначала подключи второй телефон'); return; }
     if (net.started) { hint('Совместная игра уже запущена'); return; }
     const hostHero = HEROES[save.hero] ? save.hero : 'hunter';
-    newRun(hostHero); run.slot = null;
+    newRun(hostHero); run.slot = null; run.player.heroId = hostHero;
     run.player.x = CX - 24; run.player.y = CY + 30;
     run.remotePlayer = networkActor(net.peerHero, CX + 24, CY + 30);
     run.pet = null;
@@ -84,6 +84,11 @@ js = replace_once(js,
       hint('Ты в общем мире. Передвигайся джойстиком; бой и добыча автоматические.', 5000);
     }
     run.pet = networkPet;
+    if (packet.over && !run.overShown) {
+      run.overShown = true;
+      const delay = Math.max(0, Math.min(1200, (Number(packet.overT) || 0) * 1000));
+      setTimeout(() => { if (run && run.over && typeof showOver === 'function') showOver(); }, delay);
+    }
     updateHud();
   }
   window.addEventListener('lan-role', e => { net.role = e.detail || null; net.connected = false; net.started = false; });
